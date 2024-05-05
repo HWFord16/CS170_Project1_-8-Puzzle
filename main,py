@@ -12,26 +12,28 @@ def graph_search(problem, misplaced_tiles = False, euclidean = False):
     # little function to convert lists of lists to tuples of tuples for hashing
     def t(x): return tuple(tuple(y) for y in x)
 
-    # initialize frontier
-    frontier[t(initial_state)] = Node(initial_state, depth=0, goal_state = goal_state)
+    # initialize root node in tree for frontier
+    initial_node = Node(initial_state, depth=0, goal_state = goal_state)
+    tree = Tree(initial_node)
+    frontier[t(initial_state)] = initial_node
 
     # Set heuristic function based on parameter flags
     # else default H(n)=0  --> Uni. cost search (UCS)
     if (misplaced_tiles):
       frontier[t(initial_state)].h = lambda x: frontier[t(initial_state)].misplaced_tiles()
-
     if (euclidean):
       frontier[t(initial_state)].h = lambda x: frontier[t(initial_state)].euclidean()
 
-    # execute loop while frontier is empty
-    while (len(frontier) > 0):
-
+    # execute loop while frontier is not empty
+    while(frontier):
         # pick from frontier using minimum heuristic function cost
         min_cost = min(frontier[x].heuristic() for x in frontier)
         pick_state = next(state for state in frontier if frontier[state].heuristic() == min_cost and state not in explored)
 
         # test if goal state
-        if (t(pick_state) == t(goal_state)): return frontier[t(pick_state)]
+        if (t(pick_state) == t(goal_state)):
+          tree.output_solution(frontier[t(pick_state)]) #trace solution path from goal node to root
+          return frontier[t(pick_state)]
 
         # expand & remove from frontier
         frontier[t(pick_state)].expand()
@@ -51,7 +53,6 @@ def graph_search(problem, misplaced_tiles = False, euclidean = False):
         del frontier[t(pick_state)]
 
     return False
-
 
 def main():
     print('Welcome to atole027\'s, spaka002\'s, and  hwill006\'s  8 puzzle solver.\n')
