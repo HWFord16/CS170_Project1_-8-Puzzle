@@ -1,4 +1,3 @@
-import numpy as np
 class Node:
     def __init__(self, state, depth, move = None, parent = None, goal_state = [[1,2,3],[4,5,6],[7,8,0]]):
         self.state = state
@@ -29,7 +28,7 @@ class Node:
         #find non-matching elements between states and return sum
         count = np.sum(current_state != goal_state)
         return count
-    
+
     def euclidean(self):
         if self.goal_state is None:  ##Check node instance for goal_state
             return float('inf')
@@ -56,43 +55,37 @@ class Node:
         return cost
 
     def expand(self):
-
+        #Find the blank space == (0) value, store its coordinates
+        coords = None
         for i in range(len(self.state)):
-            for j in range(len(self.state[0])):
-                if (self.state[i][j] == 0):
+            for j in range(len(self.state[i])):
+                if self.state[i][j] == 0:
                     coords = (i, j)
+                    break
+            if coords is not None:  #break out of the loop if located (0)
+                break
 
-        limit = len(self.state)-1
+        limit = len(self.state) - 1  #boundary checking for puzzles row/col indexes
 
-        # just hardcoded all (4) of the moves possible for this state
-        if ((self.move != "up") and (coords[0] > 0)):
-            new_state = [x.copy() for x in self.state.copy()].copy()
-            new_state[coords[0]][coords[1]] = int(new_state[coords[0]-1][coords[1]])
-            new_state[coords[0]-1][coords[1]] = 0
+        #Define operators (moves)
+        moves = {
+            'down': (1, 0),   # Move blank down
+            'up': (-1, 0),    # Move blank up
+            'right': (0, 1),  # Move blank right
+            'left': (0, -1)   # Move blank left
+        }
 
-            self.add_child(Node(new_state, depth=self.g+1, move="up", parent = self))
-            del new_state
-
-        if ((self.move != "down") and (coords[0] < limit)):
-            new_state = [x.copy() for x in self.state.copy()].copy()
-            new_state[coords[0]][coords[1]] = int(new_state[coords[0]+1][coords[1]])
-            new_state[coords[0]+1][coords[1]] = 0
-
-            self.add_child(Node(new_state, depth=self.g+1, move="down", parent = self))
-            del new_state
-
-        if ((self.move != "left") and (coords[1] > 0)):
-            new_state = [x.copy() for x in self.state.copy()].copy()
-            new_state[coords[0]][coords[1]] = int(new_state[coords[0]][coords[1]-1])
-            new_state[coords[0]][coords[1]-1] = 0
-
-            self.add_child(Node(new_state, depth=self.g+1, move="left", parent = self))
-            del new_state
-
-        if ((self.move != "right") and (coords[1] < limit)):
-            new_state = [x.copy() for x in self.state.copy()].copy()
-            new_state[coords[0]][coords[1]] = int(new_state[coords[0]][coords[1]+1])
-            new_state[coords[0]][coords[1]+1] = 0
-
-            self.add_child(Node(new_state, depth=self.g+1, move="right", parent = self))
-            del new_state
+        #Generate new states for each node's possible move
+        for move, (coord_i, coord_j) in moves.items():
+            new_i, new_j = coords[0] + coord_i, coords[1] + coord_j
+            if 0 <= new_i <= limit and 0 <= new_j <= limit:  #Check new position's bounds
+                #Check previous move to avoid reversing the last move to create potential cycles etc. 
+                if not (self.move and move == {'down': 'up', 'up': 'down', 'left': 'right', 'right': 'left'}.get(self.move)):
+                    #Create new state by copying the current state
+                    new_state = [row[:] for row in self.state]
+                    #Swap the blank with adjacent tile
+                    new_state[coords[0]][coords[1]], new_state[new_i][new_j] = new_state[new_i][new_j], new_state[coords[0]][coords[1]]
+                    
+                    #Create new node instance for new state & add as child to parent node
+                    new_node = Node(new_state, self.g + 1, move, self)
+                    self.add_child(new_node)
